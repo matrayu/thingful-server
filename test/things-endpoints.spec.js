@@ -35,6 +35,7 @@ describe('Things Endpoints', function() {
     })
 
     context('Given there are things in the database', () => {
+      beforeEach('cleanup', () => helpers.cleanTables(db))
       beforeEach('insert things', () =>
         helpers.seedThingsTables(
           db,
@@ -59,6 +60,7 @@ describe('Things Endpoints', function() {
     })
 
     context(`Given an XSS attack thing`, () => {
+      beforeEach('cleanup', () => helpers.cleanTables(db))
       const testUser = helpers.makeUsersArray()[1]
       const {
         maliciousThing,
@@ -87,15 +89,22 @@ describe('Things Endpoints', function() {
 
   describe(`GET /api/things/:thing_id`, () => {
     context(`Given no things`, () => {
+      this.beforeEach(() => 
+        db
+          .into('thingful_users')
+          .insert(testUsers)
+      )
       it(`responds with 404`, () => {
         const thingId = 123456
         return supertest(app)
           .get(`/api/things/${thingId}`)
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
           .expect(404, { error: `Thing doesn't exist` })
       })
     })
 
     context('Given there are things in the database', () => {
+      beforeEach('cleanup', () => helpers.cleanTables(db))
       beforeEach('insert things', () =>
         helpers.seedThingsTables(
           db,
@@ -115,11 +124,13 @@ describe('Things Endpoints', function() {
 
         return supertest(app)
           .get(`/api/things/${thingId}`)
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
           .expect(200, expectedThing)
       })
     })
 
     context(`Given an XSS attack thing`, () => {
+      beforeEach('cleanup', () => helpers.cleanTables(db))
       const testUser = helpers.makeUsersArray()[1]
       const {
         maliciousThing,
@@ -137,6 +148,7 @@ describe('Things Endpoints', function() {
       it('removes XSS attack content', () => {
         return supertest(app)
           .get(`/api/things/${maliciousThing.id}`)
+          .set('Authorization', helpers.makeAuthHeader(testUser))
           .expect(200)
           .expect(res => {
             expect(res.body.title).to.eql(expectedThing.title)
@@ -147,16 +159,24 @@ describe('Things Endpoints', function() {
   })
 
   describe(`GET /api/things/:thing_id/reviews`, () => {
+    beforeEach('cleanup', () => helpers.cleanTables(db))
     context(`Given no things`, () => {
+      beforeEach(() => 
+        db
+          .into('thingful_users')
+          .insert(testUsers)
+      )
       it(`responds with 404`, () => {
         const thingId = 123456
         return supertest(app)
           .get(`/api/things/${thingId}/reviews`)
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
           .expect(404, { error: `Thing doesn't exist` })
       })
     })
 
     context('Given there are reviews for thing in the database', () => {
+      beforeEach('cleanup', () => helpers.cleanTables(db))
       beforeEach('insert things', () =>
         helpers.seedThingsTables(
           db,
@@ -174,6 +194,7 @@ describe('Things Endpoints', function() {
 
         return supertest(app)
           .get(`/api/things/${thingId}/reviews`)
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
           .expect(200, expectedReviews)
       })
     })
