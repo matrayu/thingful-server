@@ -25,6 +25,8 @@ describe('Things Endpoints', function() {
 
   afterEach('cleanup', () => helpers.cleanTables(db))
 
+  
+
   describe(`GET /api/things`, () => {
     context(`Given no things`, () => {
       it(`responds with 200 and an empty list`, () => {
@@ -89,10 +91,8 @@ describe('Things Endpoints', function() {
 
   describe(`GET /api/things/:thing_id`, () => {
     context(`Given no things`, () => {
-      this.beforeEach(() => 
-        db
-          .into('thingful_users')
-          .insert(testUsers)
+      beforeEach(() => 
+        helpers.seedUsers(db, testUsers)
       )
       it(`responds with 404`, () => {
         const thingId = 123456
@@ -162,9 +162,7 @@ describe('Things Endpoints', function() {
     beforeEach('cleanup', () => helpers.cleanTables(db))
     context(`Given no things`, () => {
       beforeEach(() => 
-        db
-          .into('thingful_users')
-          .insert(testUsers)
+        helpers.seedUsers(db, testUsers)
       )
       it(`responds with 404`, () => {
         const thingId = 123456

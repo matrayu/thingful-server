@@ -1,3 +1,5 @@
+const bcrypt = require('bcryptjs')
+
 function makeUsersArray() {
   return [
     {
@@ -230,24 +232,52 @@ function cleanTables(db) {
   )
 }
 
-function seedThingsTables(db, users, things, reviews=[]) {
+function seedUsers(db, users) {
+  const preppedUsers = users.map(user => ({
+    ...user,
+    password: bcrypt.hashSync(user.password, 1)
+  }))
   return db
     .into('thingful_users')
-    .insert(users)
-    .then(() =>
-      db
-        .into('thingful_things')
-        .insert(things)
-    )
-    .then(() =>
-      reviews.length && db.into('thingful_reviews').insert(reviews)
+    .insert(preppedUsers)
+    .then(() => 
+      // update the auto sequence to stay in sync
+      db.raw(
+        `SELECT setval('thingful_users_id_seq', ?)`,
+        [users[users.length - 1].id]
+      )
     )
 }
 
+function seedThingsTables(db, users, things, reviews=[]) {
+  // use a transaction to group the queries and auto rollback on any failure
+  return db.transaction(async trx => {
+    await seedUsers(trx, users)
+    await trx
+      .into('thingful_things')
+      .insert(things)
+    // update the auto sequence to match the forced id values
+    await trx
+      .raw(
+        `SELECT setval('thingful_things_id_seq', ?)`,
+        [things[things.length - 1].id],
+      )
+    // only insert comments if there are some, also update the sequence counter
+    if (reviews.length) {
+      await trx
+        .into('thingful_reviews')
+        .insert(reviews)
+      await trx
+        .raw(
+          `SELECT setval('thingful_reviews_id_seq', ?)`,
+          [reviews[reviews.length - 1].id],
+        )
+    }
+  })
+}
+
 function seedMaliciousThing(db, user, thing) {
-  return db
-    .into('thingful_users')
-    .insert([user])
+  return seedUsers(db, [user])
     .then(() =>
       db
         .into('thingful_things')
@@ -258,6 +288,10 @@ function seedMaliciousThing(db, user, thing) {
 function makeAuthHeader(user) {
   const token = Buffer.from(`${user.user_name}:${user.password}`).toString('base64')
   return `Basic ${token}`
+}
+
+function generateHash(pass) {
+  bcrypt.hash(pass, 12).then(hash => console.log({ hash }))
 }
 
 module.exports = {
@@ -272,5 +306,7 @@ module.exports = {
   cleanTables,
   seedThingsTables,
   seedMaliciousThing,
-  makeAuthHeader
+  makeAuthHeader,
+  seedUsers,
+  generateHash
 }
