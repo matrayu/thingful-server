@@ -33,17 +33,18 @@ describe('Reviews Endpoints', function() {
       )
     )
     it(`responds 401 'Unauthorized request' when invalid password`, () => {
-      const userInvalidPass = { user_name: testUsers[0].user_name, password: 'wrong' }
+      const validUser = testUsers[0]
+      const invalidSecret = 'bad-secret'
       return supertest(app)
         .post('/api/reviews')
-        .set('Authorization', helpers.makeAuthHeader(userInvalidPass))
+        .set('Authorization', helpers.makeAuthHeader(validUser, invalidSecret))
         .expect(401, { error: 'Unauthorized request' })
     })
 
-    it(`responds 401 'Missng basic token' when missing authorization token`, () => {
+    it(`responds 401 'Missing bearer token' when missing authorization token`, () => {
       return supertest(app)
         .post('/api/reviews')
-        .expect(401, { error: 'Missing basic token' })
+        .expect(401, { error: 'Missing bearer token' })
     })
 
     it(`creates a review, responding with 201 and the new review`, function() {
