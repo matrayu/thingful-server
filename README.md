@@ -39,3 +39,7 @@ timezone = 'UTC'
 
 - Start application for development: `npm run dev`
 - Run tests: `npm test`
+
+## Seeding
+
+psql -U dunder-mifflin -d thingful -f ./seeds/seed.thingful_tables.sql
