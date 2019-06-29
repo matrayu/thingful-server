@@ -36,36 +36,41 @@ describe('Protected Endpoints', function() {
 
     const protectedEndpoints = [
         {
-            name: `GET /api/things/:things_id`,
-            path: `/api/things/1`
+          name: `GET /api/things/:things_id`,
+          method: supertest(app).get(`/api/things/1`)
         },
         {
-            name: `GET /api/things/:things_id/reviews`,
-            path: `/api/things/1/reviews`
-        }
+          name: `GET /api/things/:things_id/reviews`,
+          method: supertest(app).get(`/api/things/1/reviews`)
+        },
+        {
+          name: `POST /api/reviews`,
+          method: supertest(app).post(`/api/reviews`)
+        },
+        {
+          name: `POST /api/auth/refresh`,
+          method: supertest(app).post(`/api/auth/refresh`)
+        },
     ]
 
     protectedEndpoints.forEach(endpoint => {
         describe(endpoint.name, () => {
             it(`responds 401 'Missing bearer token' when no token exists`, () => {
-              return supertest(app)
-                .get(endpoint.path)
+              return endpoint.method
                 .expect(401, { error: 'Missing bearer token' })
             })
 
             it(`responds 401 'Unauthorized request' when no credentials`, () => {
               const validUser = testUsers[0]
               const invalidSecret = 'bad-secret'
-              return supertest(app)
-                .get(endpoint.path)
+              return endpoint.method
                 .set('Authorization', helpers.makeAuthHeader(validUser, invalidSecret))
                 .expect(401, { error: 'Unauthorized request' })
             })
 
             it(`responds 401 'Unauthorized request' when invalid user`, () => {
               const userInvalid = { user_name: 'not-user', password: 'exists' }
-              return supertest(app)
-                .get(endpoint.path)
+              return endpoint.method
                 .set('Authorization', helpers.makeAuthHeader(userInvalid))
                 .expect(401, { error: 'Unauthorized request' })
             })
